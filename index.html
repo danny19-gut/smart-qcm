@@ -1,0 +1,576 @@
+     <!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plateforme d'Évaluation Académique - SmartQCM</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    h1, h2, h3 {
+      margin-bottom: 15px;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    p {
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      background-color: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .qcm-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .timer-badge {
+      background-color: #312e81;
+      color: #818cf8;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border: 1px solid #4338ca;
+    }
+
+    .timer-badge.warning {
+      background-color: #451a1a;
+      color: #f87171;
+      border-color: #991b1b;
+    }
+
+    .difficulty-badge {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+
+    .diff-moyen {
+      background-color: rgba(245, 158, 11, 0.2);
+      color: var(--warning);
+    }
+
+    .diff-difficile {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+    }
+
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .option-btn {
+      padding: 14px;
+      background-color: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      transition: all 0.2s;
+    }
+
+    .option-btn.selected {
+      background-color: rgba(59, 130, 246, 0.2);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .score-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      background-color: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .correction-item {
+      background-color: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 12px;
+    }
+
+    .correction-item.correct { border-left: 4px solid var(--success); }
+    .correction-item.wrong { border-left: 4px solid var(--danger); }
+
+    .text-success { color: var(--success); }
+    .text-danger { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- PAGE 1 : INSCRIPTION / CONNEXION -->
+    <div id="page-auth" class="page active">
+      <h2>Portail Étudiant</h2>
+      <p>Connectez-vous pour commencer votre évaluation académique.</p>
+      
+      <form id="auth-form">
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="nom" required placeholder="Ex: Dupont">
+        </div>
+        <div class="form-group">
+          <label>Prénom</label>
+          <input type="text" id="prenom" required placeholder="Ex: Jean">
+        </div>
+        <div class="form-group">
+          <label>Niveau d'études</label>
+          <select id="niveau" required>
+            <option value="">-- Choisissez --</option>
+            <option value="Licence 1">Licence 1</option>
+            <option value="Licence 2">Licence 2</option>
+            <option value="Licence 3">Licence 3</option>
+            <option value="Master 1">Master 1</option>
+            <option value="Master 2">Master 2</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Matricule</label>
+          <input type="text" id="matricule" required placeholder="Ex: 21T2489">
+        </div>
+        <button type="submit" class="btn">S'inscrire / Se connecter</button>
+      </form>
+    </div>
+
+    <!-- PAGE 2 : CHOIX DE L'UE -->
+    <div id="page-ue" class="page">
+      <h2>Choix de l'Unité d'Enseignement</h2>
+      <p id="welcome-msg"></p>
+
+      <div class="form-group">
+        <label>Entrez le sujet ou le nom de l'UE</label>
+        <input type="text" id="ue-input" placeholder="Ex: Algorithme, Python, Réseaux, SQL...">
+      </div>
+
+      <div style="background-color: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border);">
+        <h4 style="margin-bottom: 8px;">Règles de l'évaluation :</h4>
+        <ul style="margin-left: 20px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+          <li>Nombre total de questions : <strong>40</strong></li>
+          <li>Questions de niveau Moyen (1 à 20) : <strong>1 minute max</strong> par question.</li>
+          <li>Questions Extrêmement Difficiles (21 à 40) : <strong>2 minutes max</strong> par question.</li>
+          <li>Passage automatique à la question suivante dès expiration du temps.</li>
+        </ul>
+      </div>
+
+      <button id="start-btn" class="btn">Commencer le Test</button>
+      <button id="logout-btn" class="btn btn-secondary">Déconnexion</button>
+    </div>
+
+    <!-- PAGE 3 : PASSER LE QCM -->
+    <div id="page-qcm" class="page">
+      <div class="qcm-header">
+        <div>
+          <span id="q-counter" style="font-weight: bold; font-size: 1.1rem;">Question 1 / 40</span>
+          <span id="q-diff" class="difficulty-badge diff-moyen" style="margin-left: 10px;">MOYEN</span>
+        </div>
+        <div id="timer" class="timer-badge">01:00</div>
+      </div>
+
+      <h3 id="q-title" style="min-height: 60px; line-height: 1.4;">Énoncé de la question...</h3>
+
+      <div id="options-container" class="options-grid"></div>
+
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 20px; text-align: center;">
+        Sélectionnez votre réponse. Dès que le temps expire, la question valide automatiquement.
+      </p>
+    </div>
+
+    <!-- PAGE 4 : RÉSULTATS / CORRECTION -->
+    <div id="page-results" class="page">
+      <h2>Résultats & Correction</h2>
+      <p id="result-student-info"></p>
+
+      <div class="score-summary">
+        <div class="stat-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Score Total</div>
+          <div id="score-val" class="number">0 / 40</div>
+        </div>
+        <div class="stat-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Réponses Justes</div>
+          <div id="correct-count" class="number text-success">0</div>
+        </div>
+        <div class="stat-card">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Réponses Incorrectes</div>
+          <div id="wrong-count" class="number text-danger">0</div>
+        </div>
+      </div>
+
+      <h3>Correction Détaillée</h3>
+      <div id="correction-list" style="max-height: 350px; overflow-y: auto; padding-right: 5px; margin-top: 15px;"></div>
+
+      <button id="restart-btn" class="btn" style="margin-top: 20px;">Nouveau Test</button>
+    </div>
+
+  </div>
+
+  <script>
+    let currentUser = null;
+    let currentUE = "";
+    let questions = [];
+    let currentQIndex = 0;
+    let selectedAnswer = null;
+    let userAnswers = [];
+    let timerInterval = null;
+    let timeLeft = 0;
+
+    // Banque de vraies questions réalistes
+    const baseDatabase = [
+      // Questions Moyennes (1 à 20) - 1 min
+      { q: "Quelle est la complexité temporelle moyenne d'une recherche dichotomique dans un tableau trié de taille N ?", choices: ["O(1)", "O(log N)", "O(N)", "O(N log N)"], correct: 1 },
+      { q: "En Python, quel type de données est immuable ?", choices: ["Dictionnaire", "Liste", "Tuple", "Ensemble (Set)"], correct: 2 },
+      { q: "Dans le modèle OSI, à quelle couche appartient le protocole IP ?", choices: ["Couche 2 (Liaison)", "Couche 3 (Réseau)", "Couche 4 (Transport)", "Couche 7 (Application)"], correct: 1 },
+      { q: "En SQL, quelle clause permet de filtrer les résultats d'un regroupement avec GROUP BY ?", choices: ["WHERE", "HAVING", "ORDER BY", "FILTER"], correct: 1 },
+      { q: "Quelle structure de données fonctionne sur le principe LIFO (Last In, First Out) ?", choices: ["File (Queue)", "Pile (Stack)", "Arbre binaire", "Graphe"], correct: 1 },
+      { q: "En Orienté Objet, qu'est-ce que le polymorphisme ?", choices: ["Masquer les données membres", "La capacité d'une méthode à prendre plusieurs formes", "L'héritage multiple obligatoire", "L'allocation dynamique de mémoire"], correct: 1 },
+      { q: "Quel est le rôle principal d'un compilateur ?", choices: ["Exécuter le code ligne par ligne", "Traduire le code source en langage machine", "Gérer la mémoire vive au runtime", "Créer des bases de données"], correct: 1 },
+      { q: "En C, que retourne l'opérateur sizeof(char) ?", choices: ["1", "2", "4", "Dépend du processeur"], correct: 0 },
+      { q: "Quel port par défaut est utilisé par le protocole HTTPS ?", choices: ["80", "21", "443", "8080"], correct: 2 },
+      { q: "Quelle est la différence principale entre un processus et un thread ?", choices: ["Les threads ne partagent pas la mémoire", "Les processus partagent un même espace mémoire", "Chaque processus a son propre espace d'adressage mémoire", "Les threads s'exécutent sur des machines différentes"], correct: 2 },
+      { q: "Dans un système d'exploitation, que permet d'éviter l'algorithme du banquier ?", choices: ["Les erreurs de pagination", "Les interblocages (Deadlocks)", "La mémoire virtuelle saturée", "Les fuites mémoire"], correct: 1 },
+      { q: "Quel symbole est utilisé en Python pour la division entière ?", choices: ["/", "//", "%", "div"], correct: 1 },
+      { q: "Quelle est la clé primaire d'une table SQL ?", choices: ["Un champ qui accepte les valeurs NULL", "Un identifiant unique pour chaque enregistrement", "Une référence vers une autre table", "Un index de tri secondaire"], correct: 1 },
+      { q: "En Git, quelle commande permet de récupérer les modifications d'un dépôt distant et de les fusionner ?", choices: ["git push", "git fetch", "git pull", "git commit"], correct: 2 },
+      { q: "Dans un arbre binaire de recherche (ABR), où se trouvent les éléments plus petits que la racine ?", choices: ["Sous-arbre gauche", "Sous-arbre droit", "À la racine", "Aux feuilles uniquement"], correct: 0 },
+      { q: "Quel protocole est dit 'non orienté connexion' ?", choices: ["TCP", "UDP", "FTP", "SSH"], correct: 1 },
+      { q: "En Javascript, quel est le résultat de typeof null ?", choices: ["'null'", "'undefined'", "'object'", "'boolean'"], correct: 2 },
+      { q: "Qu'est-ce que la mémoire cache du processeur ?", choices: ["Une mémoire de stockage de masse SSD", "Une mémoire très rapide située près du CPU", "Un espace sur le disque dur", "Une mémoire ROM flashable"], correct: 1 },
+      { q: "En Algorithmique, que garantit le tri par fusion (Merge Sort) ?", choices: ["Une complexité de O(N²)", "Une complexité au pire des cas de O(N log N)", "Un tri en place sans mémoire supplémentaire", "Un tri en temps linéaire O(N)"], correct: 1 },
+      { q: "Quel est le masque de sous-réseau par défaut d'une adresse de classe C ?", choices: ["255.0.0.0", "255.255.0.0", "255.255.255.0", "255.255.255.255"], correct: 2 },
+
+      // Questions Extrêmement Difficiles (21 à 40) - 2 min
+      { q: "Dans un problème P vs NP, à quelle classe appartient un problème dont la solution peut être VÉRIFIÉE en temps polynomial ?", choices: ["P", "NP", "NP-Complet", "NP-Difficile"], correct: 1 },
+      { q: "Soit un graphe orienté pondéré à poids positifs. Quel est le pire cas de complexité de l'algorithme de Dijkstra avec un tas binaire ?", choices: ["O(V²)", "O((V + E) log V)", "O(V * E)", "O(E²)"], correct: 1 },
+      { q: "En architecture matérielle, qu'est-ce qu'un aléa de structure (Structural Hazard) dans un pipeline de processeur ?", choices: ["Deux instructions tentent d'utiliser la même ressource matérielle au même cycle", "Une instruction dépend du résultat d'une instruction précédente", "Un branchement conditionnel mal prédit", "Une interruption matérielle externe"], correct: 0 },
+      { q: "Dans le théorème CAP des systèmes distribués, que signifie le 'C' ?", choices: ["Concurrency (Concurrence)", "Consistency (Cohérence)", "Computation (Calcul)", "Capacity (Capacité)"], correct: 1 },
+      { q: "Dans l'algorithme RSA, sur quelle difficulté mathématique repose la sécurité du chiffrement ?", choices: ["Le problème du logarithme discret", "La factorisation de grands nombres premiers", "La recherche de collisions SHA-256", "La géométrie des courbes elliptiques"], correct: 1 },
+      { q: "En SQL, quel niveau d'isolation des transactions empêche les 'lectures fantômes' (Phantom Reads) ?", choices: ["Read Uncommitted", "Read Committed", "Repeatable Read", "Serializable"], correct: 3 },
+      { q: "Dans la gestion de la mémoire, qu'est-ce que le phénomène de Thrashing (emballement) ?", choices: ["Une surchauffe du microprocesseur", "Un temps excessif passé par l'OS à échanger des pages mémoire (swapping)", "Une fragmentation externe du tas (heap)", "Un débordement de pile incontrôlé"], correct: 1 },
+      { q: "En théorie des langages, quelle est la classe de grammaires reconnue par un automate à pile non déterministe ?", choices: ["Régulières (Type 3)", "Hors-contexte / Hors-sensible (Type 2)", "Contextuelles (Type 1)", "Récursivement ennumérables (Type 0)"], correct: 1 },
+      { q: "Dans l'algorithme Raft de consensus distribué, quel rôle n'existe PAS ?", choices: ["Leader", "Follower", "Candidate", "Master"], correct: 3 },
+      { q: "Dans les arbres AVL, quel est le facteur d'équilibrage maximal toléré pour chaque nœud ?", choices: ["0", "[-1, 0, 1]", "[-2, 2]", "Dépend de la hauteur H"], correct: 1 },
+      { q: "Quelle est la complexité spatiale minimale pour inverser une liste chaînée de manière itérative ?", choices: ["O(1)", "O(log N)", "O(N)", "O(N²)"], correct: 0 },
+      { q: "En compilation, quelle étape produit l'arbre d'analyse syntaxique (AST) ?", choices: ["L'analyse lexicale (Lexer)", "L'analyse syntaxique (Parser)", "L'analyse sémantique", "La génération de code intermédiaire"], correct: 1 },
+      { q: "Dans le protocole TCP, à quoi sert l'algorithme de Nagle ?", choices: ["À contrôler la taille de la fenêtre glissante", "À réduire le nombre de petits paquets envoyés sur le réseau", "À réémettre les paquets perdus", "À chiffrer la connexion TLS"], correct: 1 },
+      { q: "Dans un système de fichiers, que contient un inode sous UNIX ?", choices: ["Le contenu textuel brut du fichier", "Le nom du fichier et son chemin d'accès", "Les métadonnées et les adresses des blocs de données", "La clé de chiffrement du disque"], correct: 2 },
+      { q: "Quelle est la complexité temporelle de la multiplication matricielle standard de Strassen ?", choices: ["O(N³)", "O(N^2.807)", "O(N² log N)", "O(N²)"], correct: 1 },
+      { q: "En programmation fonctionnelle, qu'est-ce que la 'Curryfication' (Currying) ?", choices: ["Transformer une fonction à plusieurs arguments en une suite de fonctions à un seul argument", "Évaluer une fonction immédiatement au démarrage", "Conserver en cache le résultat de calculs lourds", "Supprimer les effets de bord d'une fonction"], correct: 0 },
+      { q: "Dans une base de données NoSQL Cassandra, que garantit l'architecture en anneau (Consistent Hashing) ?", choices: ["Une cohérence stricte immédiate", "Une répartition uniforme des données sans point unique de défaillance", "Un stockage sous forme de tables relationnelles", "L'exécution de requêtes JOIN complexes"], correct: 1 },
+      { q: "Quel problème survient lors de l'utilisation de verrous fins (fine-grained locking) mal gérés ?", choices: ["Une diminution des performances par interblocage (Deadlock)", "Une augmentation de la fragmentation mémoire", "Une mauvaise conversion de types", "Un débordement de tampon réseau"], correct: 0 },
+      { q: "Dans l'algorithme A* (A-Star), que doit respecter l'heuristique h(n) pour garantir de trouver le chemin optimal ?", choices: ["Elle doit être supérieure au coût réel", "Elle doit être admissible (ne jamais surestimer le coût)", "Elle doit être égale à zéro", "Elle doit être négative"], correct: 1 },
+      { q: "Quelle est la particularité d'un Garbage Collector de type 'Generational' ?", choices: ["Il parcourt toute la mémoire à chaque passage", "Il sépare les objets selon leur durée de vie (jeunes vs anciens)", "Il nécessite l'arrêt total du processeur à chaque seconde", "Il fonctionne uniquement sans pointeurs"], correct: 1 }
+    ];
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+    }
+
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const studentData = {
+        nom: document.getElementById('nom').value.trim(),
+        prenom: document.getElementById('prenom').value.trim(),
+        niveau: document.getElementById('niveau').value,
+        matricule: document.getElementById('matricule').value.trim()
+      };
+      localStorage.setItem('student_' + studentData.matricule, JSON.stringify(studentData));
+      localStorage.setItem('current_session', studentData.matricule);
+      currentUser = studentData;
+      loadUEScreen();
+    });
+
+    function checkExistingSession() {
+      const activeMatricule = localStorage.getItem('current_session');
+      if (activeMatricule) {
+        const data = localStorage.getItem('student_' + activeMatricule);
+        if (data) {
+          currentUser = JSON.parse(data);
+          loadUEScreen();
+          return;
+        }
+      }
+      showPage('page-auth');
+    }
+
+    function loadUEScreen() {
+      document.getElementById('welcome-msg').innerText = 
+        `Étudiant : ${currentUser.prenom} ${currentUser.nom} (${currentUser.niveau} | Mat: ${currentUser.matricule})`;
+      showPage('page-ue');
+    }
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('current_session');
+      currentUser = null;
+      showPage('page-auth');
+    });
+
+    function generateQuestions(ueName) {
+      return baseDatabase.map((item, index) => {
+        const isHard = index >= 20;
+        return {
+          id: index + 1,
+          title: `[${ueName}] Q${index + 1} : ${item.q}`,
+          options: item.choices,
+          correct: item.correct,
+          difficulty: isHard ? 'difficile' : 'moyen',
+          timeLimit: isHard ? 120 : 60
+        };
+      });
+    }
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      const ue = document.getElementById('ue-input').value.trim();
+      if (!ue) {
+        alert("Veuillez saisir une Unité d'Enseignement !");
+        return;
+      }
+      currentUE = ue;
+      questions = generateQuestions(ue);
+      currentQIndex = 0;
+      userAnswers = [];
+      showQuestion();
+      showPage('page-qcm');
+    });
+
+    function showQuestion() {
+      clearInterval(timerInterval);
+      selectedAnswer = null;
+
+      const q = questions[currentQIndex];
+      document.getElementById('q-counter').innerText = `Question ${q.id} / 40`;
+      
+      const diffBadge = document.getElementById('q-diff');
+      diffBadge.innerText = q.difficulty === 'difficile' ? 'EXTRÊMEMENT DIFFICILE' : 'MOYEN';
+      diffBadge.className = `difficulty-badge ${q.difficulty === 'difficile' ? 'diff-difficile' : 'diff-moyen'}`;
+
+      document.getElementById('q-title').innerText = q.title;
+
+      const container = document.getElementById('options-container');
+      container.innerHTML = '';
+
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = `${String.fromCharCode(65 + idx)}. ${opt}`;
+        btn.onclick = () => selectOption(idx, btn);
+        container.appendChild(btn);
+      });
+
+      timeLeft = q.timeLimit;
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          nextQuestion();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      const timerEl = document.getElementById('timer');
+      timerEl.innerText = display;
+
+      if (timeLeft <= 10) {
+        timerEl.classList.add('warning');
+      } else {
+        timerEl.classList.remove('warning');
+      }
+    }
+
+    function selectOption(index, element) {
+      selectedAnswer = index;
+      document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+      element.classList.add('selected');
+    }
+
+    function nextQuestion() {
+      userAnswers.push(selectedAnswer);
+      currentQIndex++;
+
+      if (currentQIndex < questions.length) {
+        showQuestion();
+      } else {
+        finishQCM();
+      }
+    }
+
+    function finishQCM() {
+      clearInterval(timerInterval);
+      
+      let correctCount = 0;
+      const correctionContainer = document.getElementById('correction-list');
+      correctionContainer.innerHTML = '';
+
+      questions.forEach((q, idx) => {
+        const userAns = userAnswers[idx];
+        const isCorrect = userAns === q.correct;
+        
+        if (isCorrect) correctCount++;
+
+        const item = document.createElement('div');
+        item.className = `correction-item ${isCorrect ? 'correct' : 'wrong'}`;
+
+        const userAnsText = userAns !== null ? `${String.fromCharCode(65 + userAns)}. ${q.options[userAns]}` : "<em>Non répondu (Temps écoulé)</em>";
+        const correctAnsText = `${String.fromCharCode(65 + q.correct)}. ${q.options[q.correct]}`;
+
+        item.innerHTML = `
+          <strong>${q.title}</strong>
+          <div style="margin-top: 5px; font-size: 0.9rem;">
+            Votre réponse : <span class="${isCorrect ? 'text-success' : 'text-danger'}">${userAnsText}</span>
+          </div>
+          ${!isCorrect ? `<div style="margin-top: 3px; font-size: 0.9rem;" class="text-success">Réponse exacte : ${correctAnsText}</div>` : ''}
+        `;
+
+        correctionContainer.appendChild(item);
+      });
+
+      document.getElementById('result-student-info').innerText = 
+        `Étudiant : ${currentUser.prenom} ${currentUser.nom} (${currentUser.matricule}) | UE : ${currentUE}`;
+      document.getElementById('score-val').innerText = `${correctCount} / 40`;
+      document.getElementById('correct-count').innerText = correctCount;
+      document.getElementById('wrong-count').innerText = 40 - correctCount;
+
+      showPage('page-results');
+    }
+
+    document.getElementById('restart-btn').addEventListener('click', () => {
+      showPage('page-ue');
+    });
+
+    checkExistingSession();
+  </script>
+</body>
+</html>
